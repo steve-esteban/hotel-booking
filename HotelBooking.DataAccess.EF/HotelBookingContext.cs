@@ -1,9 +1,7 @@
-﻿using System;
-using HotelBooking.Model;
+﻿using HotelBooking.Model;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace HotelBooking.Models
+namespace HotelBooking.DataAccess.EF
 {
     public partial class HotelBookingContext : DbContext
     {
