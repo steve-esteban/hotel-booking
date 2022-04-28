@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace HotelBooking.Models
+namespace HotelBooking.Model
 {
     public partial class Room
     {

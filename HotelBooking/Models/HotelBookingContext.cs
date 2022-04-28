@@ -1,4 +1,5 @@
 ﻿using System;
+using HotelBooking.Model;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -6,10 +7,6 @@ namespace HotelBooking.Models
 {
     public partial class HotelBookingContext : DbContext
     {
-        public HotelBookingContext()
-        {
-        }
-
         public HotelBookingContext(DbContextOptions<HotelBookingContext> options)
             : base(options)
         {
@@ -19,15 +16,6 @@ namespace HotelBooking.Models
         public virtual DbSet<Reservation> Reservation { get; set; }
         public virtual DbSet<Room> Room { get; set; }
         public virtual DbSet<User> User { get; set; }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkId=723263 for guidance on storing connection strings.
-                optionsBuilder.UseSqlServer("Server=DESKTOP-GV53P8Q\\SQLEXPRESS;Database=HotelBooking;Integrated Security=True");
-            }
-        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -40,7 +28,8 @@ namespace HotelBooking.Models
 
             modelBuilder.Entity<Reservation>(entity =>
             {
-                entity.Property(e => e.Date).HasColumnType("datetime");
+                entity.Property(e => e.StartDate).HasColumnType("datetime");
+                entity.Property(e => e.EndDate).HasColumnType("datetime");
 
                 entity.HasOne(d => d.Room)
                     .WithMany(p => p.Reservation)
@@ -53,6 +42,9 @@ namespace HotelBooking.Models
                     .HasForeignKey(d => d.UserId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_User_Reservation");
+
+                entity.Property(e=>e.IsActive).HasColumnName("IsActive");
+                entity.Property(e => e.ReservationGuid).HasColumnName("ReservationGuid");
             });
 
             modelBuilder.Entity<Room>(entity =>

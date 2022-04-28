@@ -11,6 +11,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.OpenApi.Models;
+using HotelBooking.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking
 {
@@ -26,6 +28,8 @@ namespace HotelBooking
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var connection = Configuration.GetConnectionString("HotelBookingDatabase");
+            services.AddDbContextPool<HotelBookingContext>(options => options.UseSqlServer(connection));
             services.AddControllers();
             services.AddSwaggerGen(options =>
             {
