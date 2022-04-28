@@ -13,4 +13,8 @@
     <ProjectReference Include="..\HotelBooking.Model\HotelBooking.Model.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Repositories\" />
+  </ItemGroup>
+
 </Project>
