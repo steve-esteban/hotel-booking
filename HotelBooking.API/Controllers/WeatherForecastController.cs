@@ -1,4 +1,5 @@
 ﻿using HotelBooking.DataAccess.EF;
+using HotelBooking.Model;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -31,7 +32,15 @@ namespace HotelBooking.Controllers
         [HttpGet]
         public async Task<IEnumerable<WeatherForecast>> GetAsync()
         {
-            var products = await _context.Hotel.FindAsync(1);
+            try
+            {
+                var products = await _context.Hotel.FindAsync(1);
+                _logger.LogInformation(products.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error");
+            }
 
             var rng = new Random();
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
@@ -41,6 +50,23 @@ namespace HotelBooking.Controllers
                 Summary = Summaries[rng.Next(Summaries.Length)]
             })
             .ToArray();
+        }
+
+        [HttpGet("test")]
+        public async Task<string> GetNameAsync()
+        {
+            var products = new Hotel();
+            try
+            {
+                products = await _context.Hotel.FindAsync(1);
+                _logger.LogInformation(products.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error");
+            }
+
+            return products?.Name;
         }
     }
 }
