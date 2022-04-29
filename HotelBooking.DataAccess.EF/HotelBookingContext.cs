@@ -41,7 +41,7 @@ namespace HotelBooking.DataAccess.EF
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_User_Reservation");
 
-                entity.Property(e=>e.IsActive).HasColumnName("IsActive");
+                entity.Property(e => e.IsActive).HasColumnName("IsActive");
                 entity.Property(e => e.ReservationGuid).HasColumnName("ReservationGuid");
             });
 
@@ -58,11 +58,15 @@ namespace HotelBooking.DataAccess.EF
 
             modelBuilder.Entity<User>(entity =>
             {
+                entity.Property(e => e.UserGuid)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
                 entity.Property(e => e.Email)
                     .IsRequired()
                     .HasMaxLength(50);
 
-                entity.Property(e => e.Name).IsRequired();
+                entity.Property(e => e.FullName).IsRequired();
 
                 entity.Property(e => e.Phone)
                     .IsRequired()

@@ -1,6 +1,6 @@
 using System;
 
-namespace HotelBooking
+namespace HotelBooking.API.Models
 {
     public class WeatherForecast
     {

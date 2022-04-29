@@ -1,5 +1,6 @@
 ﻿using HotelBooking.DataAccess.EF;
 using HotelBooking.Model;
+using HotelBooking.API.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -7,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace HotelBooking.Controllers
+namespace HotelBooking.API.Controllers
 {
     [ApiController]
     [Route("[controller]")]
