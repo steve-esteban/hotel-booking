@@ -16,6 +16,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\HotelBooking.DataAccess.EF\HotelBooking.DataAccess.EF.csproj" />
 		<ProjectReference Include="..\HotelBooking.Model\HotelBooking.Model.csproj" />
+		<ProjectReference Include="..\HotelBooking.Services\HotelBooking.Services.csproj" />
 	</ItemGroup>
 
 

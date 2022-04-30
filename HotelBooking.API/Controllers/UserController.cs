@@ -1,6 +1,7 @@
 ﻿using HotelBooking.API.Models;
 using HotelBooking.DataAccess.EF;
 using HotelBooking.Model;
+using HotelBooking.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,11 +18,13 @@ namespace HotelBooking.API.Controllers
     {
         private readonly ILogger<UserController> _logger;
         private readonly HotelBookingContext _context;
+        private readonly IUserService _userService;
 
-        public UserController(ILogger<UserController> logger, HotelBookingContext context)
+        public UserController(ILogger<UserController> logger, HotelBookingContext context, IUserService userService)
         {
             _logger = logger;
             _context = context;
+            _userService = userService;
         }
 
         [HttpPost("GetUserInformation")]
@@ -30,7 +33,7 @@ namespace HotelBooking.API.Controllers
             UserDto userDto;
             try
             {
-                var user = await _context.User.FirstOrDefaultAsync(x => x.UserGuid == userRequestDto.UserGuid);
+                var user = await _userService.GetByGuidAsync(userRequestDto.UserGuid);
                 if (user == null)
                 {
                     _logger.LogError($"User '{userRequestDto.UserGuid}' not found");

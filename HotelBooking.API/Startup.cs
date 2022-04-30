@@ -1,3 +1,4 @@
+using HotelBooking.API.Configuration;
 using HotelBooking.DataAccess.EF;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -23,6 +24,9 @@ namespace HotelBooking
         {
             var connection = Configuration.GetConnectionString("HotelBookingDatabase");
             services.AddDbContextPool<HotelBookingContext>(options => options.UseSqlServer(connection));
+
+            ServiceConfiguration.MapServices(services);
+
             services.AddControllers();
             services.AddSwaggerGen(options =>
             {
