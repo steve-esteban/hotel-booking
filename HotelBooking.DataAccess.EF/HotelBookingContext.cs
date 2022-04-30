@@ -1,4 +1,5 @@
-﻿using HotelBooking.Model;
+﻿using HotelBooking.DataAccess.EF.Extensions;
+using HotelBooking.Model;
 using Microsoft.EntityFrameworkCore;
 
 namespace HotelBooking.DataAccess.EF
@@ -72,6 +73,8 @@ namespace HotelBooking.DataAccess.EF
                     .IsRequired()
                     .HasMaxLength(50);
             });
+
+            modelBuilder.Seed();
 
             OnModelCreatingPartial(modelBuilder);
         }
