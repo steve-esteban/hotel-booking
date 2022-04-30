@@ -15,6 +15,7 @@ namespace HotelBooking.DataAccess.EF
         public virtual DbSet<Reservation> Reservation { get; set; }
         public virtual DbSet<Room> Room { get; set; }
         public virtual DbSet<User> User { get; set; }
+        public virtual DbSet<ReservationDate> ReservationDate { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -27,23 +28,32 @@ namespace HotelBooking.DataAccess.EF
 
             modelBuilder.Entity<Reservation>(entity =>
             {
-                entity.Property(e => e.StartDate).HasColumnType("datetime");
-                entity.Property(e => e.EndDate).HasColumnType("datetime");
-
-                entity.HasOne(d => d.Room)
-                    .WithMany(p => p.Reservation)
-                    .HasForeignKey(d => d.RoomId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_Room_Reservation");
-
                 entity.HasOne(d => d.User)
                     .WithMany(p => p.Reservation)
                     .HasForeignKey(d => d.UserId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_User_Reservation");
 
-                entity.Property(e => e.IsActive).HasColumnName("IsActive");
                 entity.Property(e => e.ReservationGuid).HasColumnName("ReservationGuid");
+            });
+
+            modelBuilder.Entity<ReservationDate>(entity =>
+            {
+                entity.Property(e => e.Date).HasColumnType("datetime");
+
+                entity.HasOne(d => d.Reservation)
+                    .WithMany(p => p.ReservationDate)
+                    .HasForeignKey(d => d.ReservationId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Reservation_ReservationDate");
+
+                entity.HasOne(d => d.Room)
+                    .WithMany(p => p.ReservationDate)
+                    .HasForeignKey(d => d.RoomId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Room_ReservationDate");
+
+                entity.HasIndex(p => new { p.RoomId, p.Date }).IsUnique();
             });
 
             modelBuilder.Entity<Room>(entity =>

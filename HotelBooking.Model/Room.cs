@@ -7,7 +7,7 @@ namespace HotelBooking.Model
     {
         public Room()
         {
-            Reservation = new HashSet<Reservation>();
+            ReservationDate = new HashSet<ReservationDate>();
         }
 
         public int Id { get; set; }
@@ -15,6 +15,6 @@ namespace HotelBooking.Model
         public int HotelId { get; set; }
 
         public virtual Hotel Hotel { get; set; }
-        public virtual ICollection<Reservation> Reservation { get; set; }
+        public virtual ICollection<ReservationDate> ReservationDate { get; set; }
     }
 }

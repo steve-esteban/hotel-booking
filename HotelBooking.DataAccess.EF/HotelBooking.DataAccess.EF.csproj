@@ -10,6 +10,10 @@
     <Compile Remove="Migrations\20220430201157_Seed.Designer.cs" />
     <Compile Remove="Migrations\20220430201611_Seed.cs" />
     <Compile Remove="Migrations\20220430201611_Seed.Designer.cs" />
+    <Compile Remove="Migrations\20220430210706_Update_ReservationDate_Table.cs" />
+    <Compile Remove="Migrations\20220430210706_Update_ReservationDate_Table.Designer.cs" />
+    <Compile Remove="Migrations\20220430211514_Update_ReservationDate_Table_UniqueConstraint.cs" />
+    <Compile Remove="Migrations\20220430211514_Update_ReservationDate_Table_UniqueConstraint.Designer.cs" />
   </ItemGroup>
 
   <ItemGroup>

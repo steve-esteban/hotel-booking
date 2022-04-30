@@ -32,9 +32,9 @@ namespace HotelBooking.API.Controllers
         [HttpGet("{roomId:int}/Availability")]
         public async Task<IActionResult> GetAvailabilityAsync([FromRoute] int roomId)
         {
-            var room = await GetRoom(roomId); 
+            var room = await GetRoom(roomId);
 
-            var reservations = await _context.Reservation.Where(x => x.IsActive && x.RoomId == room.Id).ToListAsync();
+            // var reservations = await _context.Reservation.Where(x => x.IsActive && x.RoomId == room.Id).ToListAsync();
             return Ok();
         }
 
@@ -85,16 +85,16 @@ namespace HotelBooking.API.Controllers
         {
             var roomDateTimeNow = GetRoomDateTimeNow();
             var dates = Enumerable.Range(0, 30).Select(offset => roomDateTimeNow.AddDays(offset)).ToList();
-            var reservations = await _context.Reservation.Where(x => x.IsActive && x.RoomId == roomId).ToListAsync();
-            foreach (var reservation in reservations)
-            {
-                var bookedDates = Enumerable.Range(0, reservation.EndDate.Subtract(reservation.StartDate).Days)
-                    .Select(offset => reservation.StartDate.AddDays(offset));
-                foreach (var bookedDate in bookedDates)
-                {
-                    dates = dates.Where(x => x.Date != bookedDate.Date).ToList();
-                }
-            }
+            //var reservations = await _context.Reservation.Where(x => x.IsActive && x.RoomId == roomId).ToListAsync();
+            //foreach (var reservation in reservations)
+            //{
+            //    var bookedDates = Enumerable.Range(0, reservation.EndDate.Subtract(reservation.StartDate).Days)
+            //        .Select(offset => reservation.StartDate.AddDays(offset));
+            //    foreach (var bookedDate in bookedDates)
+            //    {
+            //        dates = dates.Where(x => x.Date != bookedDate.Date).ToList();
+            //    }
+            //}
 
             return dates;
         }
