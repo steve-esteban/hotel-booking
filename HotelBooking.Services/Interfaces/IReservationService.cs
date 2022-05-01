@@ -8,6 +8,7 @@ namespace HotelBooking.Services.Interfaces
     public interface IReservationService
     {
         Task<List<DateTime>> GetListOfBookedDatesAsync(int roomId);
+        Task<IEnumerable<DateTime>> GetAvailableDatesAsync(int roomId);
         Task SaveReservationAsync(Reservation reservation);
         Task<List<Reservation>> GetReservationByUserIdAsync(int userId);
         Task<Reservation> GetReservationAsync(int userId, Guid reservationGuid);
@@ -15,5 +16,7 @@ namespace HotelBooking.Services.Interfaces
         int GetReservationRoomId(Reservation reservation);
         Task UpdateReservationDateAsync(IEnumerable<ReservationDate> reservationDatesToRemove,
             IEnumerable<ReservationDate> reservationDatesToAdd);
+        DateTime GetRoomDateTimeNow();
+        DateTime GetDateFromNow(int days);
     }
 }

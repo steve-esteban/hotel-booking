@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using HotelBooking.DataAccess.EF.Constants;
 using HotelBooking.Services.Interfaces;
 
 namespace HotelBooking.Services
@@ -24,10 +25,16 @@ namespace HotelBooking.Services
             _logger = logger;
         }
 
-        public async Task<List<DateTime>> GetListOfBookedDatesAsync(int roomtId)
+        public async Task<List<DateTime>> GetListOfBookedDatesAsync(int roomId)
         {
-            var reservationDateList = await _reservationDateRepository.GetAsync(x => x.RoomId == roomtId);
+            var reservationDateList = await _reservationDateRepository.GetAsync(x => x.RoomId == roomId);
             return reservationDateList.Select(x => x.Date).ToList();
+        }
+
+        public async Task<IEnumerable<DateTime>> GetAvailableDatesAsync(int roomId)
+        {
+            var bookedDates = await GetListOfBookedDatesAsync(roomId);
+            return GetAvailableDates(bookedDates);
         }
 
         public async Task SaveReservationAsync(Reservation reservation)
@@ -93,6 +100,25 @@ namespace HotelBooking.Services
         public int GetReservationRoomId(Reservation reservation)
         {
             return reservation?.ReservationDate?.FirstOrDefault()?.RoomId ?? 0;
+        }
+
+        public DateTime GetRoomDateTimeNow() => TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById(Constants.TIME_ZONE));
+
+        public DateTime GetDateFromNow(int days) => GetRoomDateTimeNow().AddDays(days);
+
+        private IEnumerable<DateTime> GetAvailableDates(List<DateTime> bookedDates)
+        {
+            var availableDates = new List<DateTime>();
+            var roomFirstDateAvailable = GetDateFromNow(Constants.DAYS_AFTER_BOOKING);
+            var roomLastDateAvailable = GetDateFromNow(Constants.DAYS_IN_ADVANCE);
+
+            for (var date = roomFirstDateAvailable; date <= roomLastDateAvailable; date = date.AddDays(1))
+            {
+                if (!bookedDates.Any(x => x.Date == date.Date))
+                    availableDates.Add(date.Date);
+            }
+
+            return availableDates.OrderBy(x => x);
         }
 
     }

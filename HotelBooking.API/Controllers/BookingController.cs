@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 
 namespace HotelBooking.API.Controllers
 {
@@ -21,57 +22,44 @@ namespace HotelBooking.API.Controllers
         private readonly IUserService _userService;
         private readonly IRoomService _roomService;
         private readonly IReservationService _reservationService;
+        private readonly IMapper _mapper;
 
         public BookingController(ILogger<BookingController> logger, IUserService userService,
-            IRoomService roomService, IReservationService reservationService)
+            IRoomService roomService, IReservationService reservationService, IMapper mapper)
         {
             _logger = logger;
             _userService = userService;
             _roomService = roomService;
             _reservationService = reservationService;
+            _mapper = mapper;
         }
 
-        [HttpGet("Rooms")]
+        [HttpGet("rooms")]
         public async Task<ActionResult<List<RoomDto>>> GetAllRooms()
         {
             try
             {
                 var rooms = await _roomService.GetAllRooms();
-
-                var roomDtoList = rooms.Select(x => new RoomDto()
-                {
-                    RoomId = x.Id,
-                    Room = x.Name,
-                    Hotel = x.Hotel.Name
-                });
-
+                var roomDtoList = rooms.Select(x => _mapper.Map<RoomDto>(x));
                 return Ok(roomDtoList);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _logger.LogError("Error getting available rooms", ex);
-                return StatusCode(StatusCodes.Status500InternalServerError, ex);
+                _logger.LogError("Error getting available rooms");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error getting available rooms");
             }
         }
 
-        [HttpGet("room/{roomId:int}/Availability")]
+        [HttpGet("room/{roomId:int}/availability")]
         public async Task<ActionResult<AvailabilityDto>> GetAvailabilityAsync([FromRoute] int roomId)
         {
             try
             {
                 var room = await GetRoom(roomId);
-                var bookedDates = await _reservationService.GetListOfBookedDatesAsync(room.Id);
-                var availableDates = GetAvailableDatesAsync(roomId, bookedDates)
-                    .OrderBy(x => x)
-                    .Select(x => x.ToStringDefault()).ToList();
+                var availableDates = await _reservationService.GetAvailableDatesAsync(room.Id);
 
-                var availability = new AvailabilityDto()
-                {
-                    RoomId = roomId,
-                    Hotel = room.Hotel.Name,
-                    Room = room.Name,
-                    AvailableDates = availableDates
-                };
+                var availability = _mapper.Map<AvailabilityDto>(room);
+                availability.AvailableDates = availableDates.Select(x => x.ToStringDefault()).ToList();
 
                 return Ok(availability);
             }
@@ -82,7 +70,7 @@ namespace HotelBooking.API.Controllers
             }
         }
 
-        [HttpPost("room/{roomId:int}/Reservation")]
+        [HttpPost("room/{roomId:int}/reservation")]
         public async Task<IActionResult> MakeReservation([FromRoute] int roomId, [FromHeader(Name = "user-guid")] string userGuid, [FromBody][Bind] ReservationRequestDto reservationDto)
         {
             _logger.LogInformation($"Starting making reservation: {Newtonsoft.Json.JsonConvert.SerializeObject(reservationDto)}");
@@ -142,7 +130,7 @@ namespace HotelBooking.API.Controllers
             }
         }
 
-        [HttpPut("Reservation/{reservationGuid:Guid}")]
+        [HttpPut("reservation/{reservationGuid:Guid}")]
         public async Task<IActionResult> UpdateReservation([FromHeader(Name = "user-guid")] string userGuid, [FromBody][Bind] ReservationRequestDto reservationDto, Guid reservationGuid)
         {
             _logger.LogInformation($"Starting making reservation: {Newtonsoft.Json.JsonConvert.SerializeObject(reservationDto)}");
@@ -164,7 +152,7 @@ namespace HotelBooking.API.Controllers
                 if (reservation == null)
                     return NotFound($"Reservation {reservationGuid} for user '{userGuid}' not found");
 
-                if (reservation.ReservationDate?.Min(x => x.Date) <= GetRoomDateTimeNow().Date)
+                if (reservation.ReservationDate?.Min(x => x.Date) <= _reservationService.GetRoomDateTimeNow().Date)
                     return Conflict("Can't modify an old reservation");
 
                 var roomId = _reservationService.GetReservationRoomId(reservation);
@@ -211,7 +199,7 @@ namespace HotelBooking.API.Controllers
             }
         }
 
-        [HttpGet("Reservation")]
+        [HttpGet("reservation")]
         public async Task<ActionResult<List<ReservationResponseDto>>> GetUserReservations([FromHeader(Name = "user-guid")] string userGuid)
         {
             try
@@ -252,7 +240,7 @@ namespace HotelBooking.API.Controllers
 
         }
 
-        [HttpGet("Reservation/{reservationGuid:Guid}")]
+        [HttpGet("reservation/{reservationGuid:Guid}")]
         public async Task<ActionResult<ReservationResponseDto>> GetReservations([FromHeader(Name = "user-guid")] string userGuid, [FromRoute] Guid reservationGuid)
         {
             try
@@ -293,7 +281,7 @@ namespace HotelBooking.API.Controllers
 
         }
 
-        [HttpDelete("Reservation/{reservationGuid:Guid}")]
+        [HttpDelete("reservation/{reservationGuid:Guid}")]
         public async Task<IActionResult> RemoveReservations([FromHeader(Name = "user-guid")] string userGuid, [FromRoute] Guid reservationGuid)
         {
             _logger.LogInformation($"Starting removing reservation {reservationGuid} for user {userGuid}");
@@ -309,7 +297,7 @@ namespace HotelBooking.API.Controllers
                 if (reservation == null)
                     return NotFound($"Reservation {reservationGuid} for user '{userGuid}' not found");
 
-                if (reservation.ReservationDate?.Min(x => x.Date) <= GetRoomDateTimeNow().Date)
+                if (reservation.ReservationDate?.Min(x => x.Date) <= _reservationService.GetRoomDateTimeNow().Date)
                     return Conflict("Can't modify an old reservation");
 
                 await _reservationService.RemoveReservationAsync(reservation);
@@ -324,10 +312,9 @@ namespace HotelBooking.API.Controllers
             }
 
         }
-        private DateTime GetRoomDateTimeNow() => TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById(Constants.TIME_ZONE));
-        private DateTime GetDateFromNow(int days) => GetRoomDateTimeNow().AddDays(days);
 
-        // For v1.1, if room not found, select default room
+
+        // For v1, if room not found, select default room
         private async Task<Room> GetRoom(int roomId) => await _roomService.GetByIdAsync(roomId) ?? await _roomService.GetByIdAsync(Constants.DEFAULT_ROOM_ID);
 
         private ObjectResult ValidateReservationDates(ReservationRequestDto reservationDto)
@@ -335,31 +322,16 @@ namespace HotelBooking.API.Controllers
             if (reservationDto.StartDate.Date > reservationDto.EndDate.Date)
                 return BadRequest("StartDate greater than EndDate");
 
-            if ((reservationDto.StartDate.Date - GetRoomDateTimeNow().Date).TotalDays < Constants.DAYS_AFTER_BOOKING)
+            if ((reservationDto.StartDate.Date - _reservationService.GetRoomDateTimeNow().Date).TotalDays < Constants.DAYS_AFTER_BOOKING)
                 return BadRequest($"The reservation must start at least {Constants.DAYS_AFTER_BOOKING} day after the booking date");
 
             if ((reservationDto.EndDate.Date - reservationDto.StartDate.Date).TotalDays >= Constants.MAXIMUM_LENGTH_OF_STAY)
                 return BadRequest($"Stay must be less or equal to {Constants.MAXIMUM_LENGTH_OF_STAY} days");
 
-            if ((reservationDto.EndDate.Date - GetDateFromNow(Constants.DAYS_IN_ADVANCE).Date).TotalDays > 1)
+            if ((reservationDto.EndDate.Date - _reservationService.GetDateFromNow(Constants.DAYS_IN_ADVANCE).Date).TotalDays > 1)
                 return BadRequest($"Can't reserve more than {Constants.DAYS_IN_ADVANCE} days in advance");
 
             return Ok(reservationDto);
-        }
-
-        private List<DateTime> GetAvailableDatesAsync(int roomId, List<DateTime> bookedDates)
-        {
-            var availableDates = new List<DateTime>();
-            var roomFirstDateAvailable = GetDateFromNow(Constants.DAYS_AFTER_BOOKING);
-            var roomLastDateAvailable = GetDateFromNow(Constants.DAYS_IN_ADVANCE);
-
-            for (var date = roomFirstDateAvailable; date <= roomLastDateAvailable; date = date.AddDays(1))
-            {
-                if (!bookedDates.Any(x => x.Date == date.Date))
-                    availableDates.Add(date.Date);
-            }
-
-            return availableDates;
         }
 
     }
