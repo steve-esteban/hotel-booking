@@ -1,3 +1,4 @@
+using System;
 using HotelBooking.API.Configuration;
 using HotelBooking.DataAccess.EF;
 using Microsoft.AspNetCore.Builder;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 
-namespace HotelBooking
+namespace HotelBooking.API
 {
     public class Startup
     {
@@ -26,6 +27,8 @@ namespace HotelBooking
             services.AddDbContextPool<HotelBookingContext>(options => options.UseSqlServer(connection));
 
             ServiceConfiguration.MapServices(services);
+
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
             services.AddControllers();
             services.AddSwaggerGen(options =>

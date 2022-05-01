@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
@@ -17,14 +18,25 @@ namespace HotelBooking.DataAccess.EF.Repositories
             _dbSet = _context.Set<T>();
         }
 
-        public async Task<IEnumerable<T>> GetAllAsync()
+        public async Task<List<T>> GetAllAsync(List<string> includeStrings = null)
         {
-            return await _dbSet.ToListAsync();
+            IQueryable<T> queryable = _dbSet;
+            includeStrings?.ForEach(s => queryable = queryable.Include(s));
+            return await queryable.ToListAsync();
         }
 
-        public async Task<T> SingleOrDefaultAsync(Expression<Func<T, bool>> predicate)
+        public async Task<List<T>> GetAsync(Expression<Func<T, bool>> filter, List<string> includeStrings = null)
         {
-            return await _dbSet.SingleOrDefaultAsync(predicate);
+            IQueryable<T> queryable = _dbSet;
+            includeStrings?.ForEach(s => queryable = queryable.Include(s));
+            return await queryable.Where(filter).ToListAsync();
+        }
+
+        public async Task<T> SingleOrDefaultAsync(Expression<Func<T, bool>> predicate, List<string> includeStrings = null)
+        {
+            IQueryable<T> queryable = _dbSet;
+            includeStrings?.ForEach(s => queryable = queryable.Include(s));
+            return await queryable.SingleOrDefaultAsync(predicate);
         }
 
         public void Add(T entity)
@@ -32,9 +44,14 @@ namespace HotelBooking.DataAccess.EF.Repositories
             _dbSet.Add(entity);
         }
 
-        public async Task<bool> SaveChangesAsync()
+        public async Task AddAsync(T entity)
         {
-            return await _context.SaveChangesAsync().ConfigureAwait(false) > 0;
+            await _dbSet.AddAsync(entity);
+        }
+
+        public async Task SaveChangesAsync()
+        {
+            await _context.SaveChangesAsync();
         }
 
     }

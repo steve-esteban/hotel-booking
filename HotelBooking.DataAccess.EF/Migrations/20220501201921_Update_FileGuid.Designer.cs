@@ -4,14 +4,16 @@ using HotelBooking.DataAccess.EF;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace HotelBooking.DataAccess.EF.Migrations
 {
     [DbContext(typeof(HotelBookingContext))]
-    partial class HotelBookingContextModelSnapshot : ModelSnapshot
+    [Migration("20220501201921_Update_FileGuid")]
+    partial class Update_FileGuid
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

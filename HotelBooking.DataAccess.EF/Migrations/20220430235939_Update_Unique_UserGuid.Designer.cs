@@ -4,14 +4,16 @@ using HotelBooking.DataAccess.EF;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace HotelBooking.DataAccess.EF.Migrations
 {
     [DbContext(typeof(HotelBookingContext))]
-    partial class HotelBookingContextModelSnapshot : ModelSnapshot
+    [Migration("20220430235939_Update_Unique_UserGuid")]
+    partial class Update_Unique_UserGuid
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -58,9 +60,6 @@ namespace HotelBooking.DataAccess.EF.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ReservationGuid")
-                        .IsUnique();
 
                     b.HasIndex("UserId");
 

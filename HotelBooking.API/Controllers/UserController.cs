@@ -1,10 +1,9 @@
-﻿using HotelBooking.API.Models;
-using HotelBooking.DataAccess.EF;
+﻿using AutoMapper;
+using HotelBooking.API.Models;
 using HotelBooking.Model;
-using HotelBooking.Services;
+using HotelBooking.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
@@ -17,38 +16,34 @@ namespace HotelBooking.API.Controllers
     public class UserController : ControllerBase
     {
         private readonly ILogger<UserController> _logger;
-        private readonly HotelBookingContext _context;
+        private readonly IMapper _mapper;
         private readonly IUserService _userService;
 
-        public UserController(ILogger<UserController> logger, HotelBookingContext context, IUserService userService)
+        public UserController(ILogger<UserController> logger, IUserService userService, IMapper mapper)
         {
             _logger = logger;
-            _context = context;
             _userService = userService;
+            _mapper = mapper;
         }
 
-        [HttpPost("GetUserInformation")]
-        public async Task<IActionResult> GetUserInformationAsync([FromBody][Bind] UserRequestDto userRequestDto)
+        [HttpGet()]
+        public async Task<IActionResult> GetUserInformationAsync([FromHeader(Name = "user-guid")] string userGuid)
         {
-            UserDto userDto;
             try
             {
-                var user = await _userService.GetByGuidAsync(userRequestDto.UserGuid);
+                var user = await _userService.GetByGuidAsync(userGuid);
                 if (user == null)
-                {
-                    _logger.LogError($"User '{userRequestDto.UserGuid}' not found");
-                    return NotFound($"User '{userRequestDto.UserGuid}' not found");
-                }
+                    return NotFound($"User '{userGuid}' not found");
 
-                userDto = new UserDto(user.UserGuid, user.FullName, user.Email, user.Phone);
+                var userDto = _mapper.Map<UserDto>(user);
+                return Ok(userDto);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error getting user '{userRequestDto.UserGuid}'");
-                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                _logger.LogError(ex, $"Error getting user '{userGuid}'");
+                return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
 
-            return Ok(userDto);
         }
 
         [HttpPost("CreateUser")]
@@ -56,24 +51,17 @@ namespace HotelBooking.API.Controllers
         {
             _logger.LogInformation($"Creating user: {Newtonsoft.Json.JsonConvert.SerializeObject(userDto)}");
 
-            var user = new User()
-            {
-                UserGuid = userDto.UserGuid,
-                FullName = userDto.FullName,
-                Email = userDto.Email,
-                Phone = userDto.Phone
-            };
             try
             {
-                var existingUser = await _context.User.FirstOrDefaultAsync(x => x.UserGuid == userDto.UserGuid);
+                var existingUser = await _userService.GetByGuidAsync(userDto.UserGuid);
                 if (existingUser != null)
                 {
                     _logger.LogError($"Error creating user: {Newtonsoft.Json.JsonConvert.SerializeObject(userDto)}; User already exists");
                     return Conflict($"User with Guid {userDto.UserGuid} already exist");
                 }
 
-                await _context.User.AddAsync(user);
-                await _context.SaveChangesAsync();
+                var user = _mapper.Map<User>(userDto);
+                await _userService.AddUserAsync(user);
             }
             catch (Exception ex)
             {
@@ -81,7 +69,7 @@ namespace HotelBooking.API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
 
-            return Ok($"User created with Guid '{user.UserGuid}'");
+            return Ok($"User created with Guid '{userDto.UserGuid}'");
         }
     }
 }

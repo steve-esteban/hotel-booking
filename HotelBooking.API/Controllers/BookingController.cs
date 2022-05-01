@@ -1,17 +1,15 @@
-﻿using System;
+﻿using HotelBooking.API.Extensions;
+using HotelBooking.API.Models;
+using HotelBooking.DataAccess.EF.Constants;
+using HotelBooking.Model;
+using HotelBooking.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using HotelBooking.DataAccess.EF;
-using HotelBooking.DataAccess.EF.Constants;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
-using HotelBooking.API.Models;
-using HotelBooking.Model;
-using Microsoft.AspNetCore.Http;
-
 
 namespace HotelBooking.API.Controllers
 {
@@ -20,89 +18,249 @@ namespace HotelBooking.API.Controllers
     public class BookingController : ControllerBase
     {
         private readonly ILogger<BookingController> _logger;
-        private readonly HotelBookingContext _context;
+        private readonly IUserService _userService;
+        private readonly IRoomService _roomService;
+        private readonly IReservationService _reservationService;
 
-        public BookingController(ILogger<BookingController> logger, HotelBookingContext context)
+        public BookingController(ILogger<BookingController> logger, IUserService userService,
+            IRoomService roomService, IReservationService reservationService)
         {
             _logger = logger;
-            _context = context;
+            _userService = userService;
+            _roomService = roomService;
+            _reservationService = reservationService;
         }
 
-
-        [HttpGet("{roomId:int}/Availability")]
-        public async Task<IActionResult> GetAvailabilityAsync([FromRoute] int roomId)
+        [HttpGet("Rooms")]
+        public async Task<ActionResult<List<RoomDto>>> GetAllRooms()
         {
-            var room = await GetRoom(roomId);
+            try
+            {
+                var rooms = await _roomService.GetAllRooms();
 
-            // var reservations = await _context.Reservation.Where(x => x.IsActive && x.RoomId == room.Id).ToListAsync();
-            return Ok();
+                var roomDtoList = rooms.Select(x => new RoomDto()
+                {
+                    RoomId = x.Id,
+                    Room = x.Name,
+                    Hotel = x.Hotel.Name
+                });
+
+                return Ok(roomDtoList);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error getting available rooms", ex);
+                return StatusCode(StatusCodes.Status500InternalServerError, ex);
+            }
         }
 
-        [HttpPost("{roomId:int}/MakeReservation")]
-        public async Task<IActionResult> MakeReservation([FromBody][Bind] ReservationDto reservationDto)
+        [HttpGet("room/{roomId:int}/Availability")]
+        public async Task<ActionResult<AvailabilityDto>> GetAvailabilityAsync([FromRoute] int roomId)
         {
-            _logger.LogInformation($"Making reservation: {Newtonsoft.Json.JsonConvert.SerializeObject(reservationDto)}");
-            var room = await GetRoom(reservationDto.RoomId);
+            try
+            {
+                var room = await GetRoom(roomId);
+                var bookedDates = await _reservationService.GetListOfBookedDatesAsync(room.Id);
+                var availableDates = GetAvailableDatesAsync(roomId, bookedDates)
+                    .OrderBy(x => x)
+                    .Select(x => x.ToStringDefault()).ToList();
 
-            var availableDates = await GetAvailableDatesAsync(room.Id);
-            var validation = ValidateReservation(reservationDto);
+                var availability = new AvailabilityDto()
+                {
+                    RoomId = roomId,
+                    Hotel = room.Hotel.Name,
+                    Room = room.Name,
+                    AvailableDates = availableDates
+                };
+
+                return Ok(availability);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting availability for room {roomId}", ex);
+                return StatusCode(StatusCodes.Status500InternalServerError, ex);
+            }
+        }
+
+        [HttpPost("room/{roomId:int}/Reservation")]
+        public async Task<IActionResult> MakeReservation([FromRoute] int roomId, [FromBody][Bind] ReservationRequestDto reservationDto)
+        {
+            _logger.LogInformation($"Starting making reservation: {Newtonsoft.Json.JsonConvert.SerializeObject(reservationDto)}");
+
+            var validation = ValidateReservationDates(reservationDto);
             if (validation.StatusCode != StatusCodes.Status200OK)
             {
                 _logger.LogError("Error making reservation", validation.Value);
                 return validation;
             }
-            return Ok();
+
+            try
+            {
+                var room = await GetRoom(roomId);
+                var user = await _userService.GetByGuidAsync(reservationDto.UserGuid);
+                if (user == null)
+                {
+                    _logger.LogError($"Error making reservation. User {reservationDto.UserGuid} not found");
+                    return NotFound($"User {reservationDto.UserGuid} not found. Please register the user with the user/CreateUser endpoint.");
+                }
+
+                var bookedDates = await _reservationService.GetListOfBookedDatesAsync(room.Id);
+
+                var reservationDates = new List<ReservationDate>();
+
+                for (DateTime date = reservationDto.StartDate; date <= reservationDto.EndDate; date = date.AddDays(1))
+                {
+                    if (bookedDates.Any(x => x.Date == date.Date))
+                    {
+                        _logger.LogError($"Error making reservation. Date {date.Date} is already booked");
+                        return Conflict($"Date {date.Date.ToStringDefault()} is already booked");
+                    }
+
+                    reservationDates.Add(new ReservationDate()
+                    {
+                        RoomId = room.Id,
+                        Date = date.Date
+                    });
+                }
+
+                var reservation = new Reservation()
+                {
+                    ReservationGuid = Guid.NewGuid(),
+                    UserId = user.Id,
+                    ReservationDate = reservationDates
+                };
+
+                await _reservationService.SaveReservationAsync(reservation);
+
+                _logger.LogInformation($"Finish making reservation: {Newtonsoft.Json.JsonConvert.SerializeObject(reservation.ReservationGuid)}");
+                return Ok($"Booked reservation for user {user.UserGuid}. Reservation Id: {reservation.ReservationGuid}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error making reservation", ex);
+                return StatusCode(StatusCodes.Status500InternalServerError, ex);
+            }
         }
 
-        private async Task<Room> GetRoom(int roomId)
+        [HttpGet("Reservation")]
+        public async Task<ActionResult<List<ReservationResponseDto>>> GetUserReservations([FromHeader(Name = "user-guid")] string userGuid)
         {
-            // For v1.1, if room not found, select default value
-            return await _context.Room.FirstOrDefaultAsync(x => x.Id == roomId) ??
-                 await _context.Room.FirstOrDefaultAsync(x => x.Id == Constants.ROOM_ID);
+            try
+            {
+                var reservationDtoList = new List<ReservationResponseDto>();
+                var user = await _userService.GetByGuidAsync(userGuid);
+                if (user == null)
+                    return NotFound($"User '{userGuid}' not found");
+
+                var rooms = await _roomService.GetAllRooms();
+                var reservationList = await _reservationService.GetReservationByUserIdAsync(user.Id);
+                if (reservationList == null)
+                    return NotFound($"Reservations for user '{userGuid}' not found");
+
+                foreach (var reservation in reservationList)
+                {
+                    var reservationDto = reservation.ReservationDate.GroupBy(x => new { x.ReservationId, x.RoomId },
+                         (key, group) =>
+                             new ReservationResponseDto()
+                             {
+                                 ReservationGuid = reservation.ReservationGuid,
+                                 StartDate = group.Min(x => x.Date).Date.ToStringDefault(),
+                                 EndDate = group.Max(x => x.Date).Date.ToStringDefault(),
+                                 Room = rooms.FirstOrDefault(x => x.Id == key.RoomId)?.Name,
+                                 Hotel = rooms.FirstOrDefault(x => x.Id == key.RoomId)?.Hotel.Name
+                             });
+
+                    reservationDtoList.AddRange(reservationDto);
+
+                }
+                return Ok(reservationDtoList);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error getting reservations for user '{userGuid}'");
+                return StatusCode(StatusCodes.Status500InternalServerError, ex);
+            }
+
         }
 
-        private ObjectResult ValidateReservation(ReservationDto reservationDto)
+        [HttpGet("Reservation/{reservationGuid:Guid}")]
+        public async Task<ActionResult<ReservationResponseDto>> GetReservations([FromHeader(Name = "user-guid")] string userGuid, [FromRoute] Guid reservationGuid)
+        {
+            try
+            {
+                if (userGuid == string.Empty || reservationGuid == null)
+                    return BadRequest($"user-guid and reservationGuid are required");
+
+                var reservationDtoList = new List<ReservationResponseDto>();
+                var user = await _userService.GetByGuidAsync(userGuid);
+                if (user == null)
+                    return NotFound($"User '{userGuid}' not found");
+
+                var rooms = await _roomService.GetAllRooms();
+                var reservation = await _reservationService.GetReservationAsync(user.Id, reservationGuid);
+                if (reservation == null)
+                    return NotFound($"Reservation {reservationGuid} for user '{userGuid}' not found");
+
+                var reservationDto = reservation.ReservationDate.GroupBy(x => new { x.ReservationId, x.RoomId },
+                    (key, group) =>
+                        new ReservationResponseDto()
+                        {
+                            ReservationGuid = reservation.ReservationGuid,
+                            StartDate = group.Min(x => x.Date).Date.ToStringDefault(),
+                            EndDate = group.Max(x => x.Date).Date.ToStringDefault(),
+                            Room = rooms.FirstOrDefault(x => x.Id == key.RoomId)?.Name,
+                            Hotel = rooms.FirstOrDefault(x => x.Id == key.RoomId)?.Hotel.Name
+                        });
+
+                reservationDtoList.AddRange(reservationDto);
+
+                return Ok(reservationDtoList.FirstOrDefault());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error getting reservations for user '{userGuid}'");
+                return StatusCode(StatusCodes.Status500InternalServerError, ex);
+            }
+
+        }
+        private DateTime GetRoomDateTimeNow() => TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById(Constants.TIME_ZONE));
+        private DateTime GetDateFromNow(int days) => GetRoomDateTimeNow().AddDays(days);
+
+        // For v1.1, if room not found, select default room
+        private async Task<Room> GetRoom(int roomId) => await _roomService.GetByIdAsync(roomId) ?? await _roomService.GetByIdAsync(Constants.DEFAULT_ROOM_ID);
+
+        private ObjectResult ValidateReservationDates(ReservationRequestDto reservationDto)
         {
             if (reservationDto.StartDate.Date > reservationDto.EndDate.Date)
-            {
                 return BadRequest("StartDate greater than EndDate");
-            }
 
-            if ((reservationDto.EndDate.Date - reservationDto.StartDate.Date).TotalDays > 3)
-            {
-                return Conflict("Stay must be less or equal to 3 days");
-            }
+            if ((reservationDto.StartDate.Date - GetRoomDateTimeNow().Date).TotalDays < Constants.DAYS_AFTER_BOOKING)
+                return BadRequest($"The reservation must start at least {Constants.DAYS_AFTER_BOOKING} day after the booking date");
 
-            if ((GetRoomDateTimeNow().Date - reservationDto.StartDate.Date).TotalDays < 1)
-            {
-                return Conflict("The reservation must start at least one day after the booking date");
-            }
+            if ((reservationDto.EndDate.Date - reservationDto.StartDate.Date).TotalDays >= Constants.MAXIMUM_LENGTH_OF_STAY)
+                return BadRequest($"Stay must be less or equal to {Constants.MAXIMUM_LENGTH_OF_STAY} days");
+
+            if ((reservationDto.EndDate.Date - GetDateFromNow(Constants.DAYS_IN_ADVANCE).Date).TotalDays > 1)
+                return BadRequest($"Can't reserve more than {Constants.DAYS_IN_ADVANCE} days in advance");
 
             return Ok(reservationDto);
         }
 
-        private async Task<List<DateTime>> GetAvailableDatesAsync(int roomId)
+        private List<DateTime> GetAvailableDatesAsync(int roomId, List<DateTime> bookedDates)
         {
-            var roomDateTimeNow = GetRoomDateTimeNow();
-            var dates = Enumerable.Range(0, 30).Select(offset => roomDateTimeNow.AddDays(offset)).ToList();
-            //var reservations = await _context.Reservation.Where(x => x.IsActive && x.RoomId == roomId).ToListAsync();
-            //foreach (var reservation in reservations)
-            //{
-            //    var bookedDates = Enumerable.Range(0, reservation.EndDate.Subtract(reservation.StartDate).Days)
-            //        .Select(offset => reservation.StartDate.AddDays(offset));
-            //    foreach (var bookedDate in bookedDates)
-            //    {
-            //        dates = dates.Where(x => x.Date != bookedDate.Date).ToList();
-            //    }
-            //}
+            var availableDates = new List<DateTime>();
+            var roomFirstDateAvailable = GetDateFromNow(Constants.DAYS_AFTER_BOOKING);
+            var roomLastDateAvailable = GetDateFromNow(Constants.DAYS_IN_ADVANCE);
 
-            return dates;
-        }
+            for (var date = roomFirstDateAvailable; date <= roomLastDateAvailable; date = date.AddDays(1))
+            {
+                if (!bookedDates.Any(x => x.Date == date.Date))
+                    availableDates.Add(date.Date);
+            }
 
-        private DateTime GetRoomDateTimeNow()
-        {
-            return TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time"));
+            return availableDates;
         }
 
     }
 }
+

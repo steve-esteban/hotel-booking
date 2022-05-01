@@ -35,6 +35,7 @@ namespace HotelBooking.DataAccess.EF
                     .HasConstraintName("FK_User_Reservation");
 
                 entity.Property(e => e.ReservationGuid).HasColumnName("ReservationGuid");
+                entity.HasIndex(x => x.ReservationGuid).IsUnique();
             });
 
             modelBuilder.Entity<ReservationDate>(entity =>
@@ -82,6 +83,8 @@ namespace HotelBooking.DataAccess.EF
                 entity.Property(e => e.Phone)
                     .IsRequired()
                     .HasMaxLength(50);
+
+                entity.HasIndex(x => x.UserGuid).IsUnique();
             });
 
             modelBuilder.Seed();

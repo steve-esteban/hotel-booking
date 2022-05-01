@@ -7,13 +7,17 @@ namespace HotelBooking.DataAccess.EF.Repositories
 {
     public interface IGenericRepository<T> where T : class
     {
-        Task<IEnumerable<T>> GetAllAsync();
+        Task<List<T>> GetAllAsync(List<string> includeStrings = null);
 
-        Task<T> SingleOrDefaultAsync(Expression<Func<T, bool>> predicate);
+        Task<List<T>> GetAsync(Expression<Func<T, bool>> filter, List<string> includeStrings = null);
+
+        Task<T> SingleOrDefaultAsync(Expression<Func<T, bool>> predicate, List<string> includeStrings = null);
 
         void Add(T entity);
 
-        Task<bool> SaveChangesAsync();
+        Task AddAsync(T entity);
+
+        Task SaveChangesAsync();
 
     }
 }
