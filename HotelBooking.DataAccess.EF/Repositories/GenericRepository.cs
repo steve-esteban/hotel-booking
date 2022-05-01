@@ -44,9 +44,24 @@ namespace HotelBooking.DataAccess.EF.Repositories
             _dbSet.Add(entity);
         }
 
+        public async Task AddRangeAsync(T[] entities)
+        {
+            await _dbSet.AddRangeAsync(entities);
+        }
+
         public async Task AddAsync(T entity)
         {
             await _dbSet.AddAsync(entity);
+        }
+
+        public void Remove(T entity)
+        {
+            _dbSet.Remove(entity);
+        }
+
+        public void RemoveRange(T[] entities)
+        {
+            _dbSet.RemoveRange(entities);
         }
 
         public async Task SaveChangesAsync()

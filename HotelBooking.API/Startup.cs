@@ -31,10 +31,9 @@ namespace HotelBooking.API
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
             services.AddControllers();
+            const string groupName = "v1";
             services.AddSwaggerGen(options =>
             {
-                var groupName = "v1";
-
                 options.SwaggerDoc(groupName, new OpenApiInfo
                 {
                     Title = $"Hotel Booking {groupName}",

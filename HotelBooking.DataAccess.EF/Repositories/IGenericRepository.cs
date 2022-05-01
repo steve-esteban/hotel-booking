@@ -15,7 +15,13 @@ namespace HotelBooking.DataAccess.EF.Repositories
 
         void Add(T entity);
 
+        Task AddRangeAsync(T[] entities);
+
         Task AddAsync(T entity);
+
+        void Remove(T entity);
+
+        void RemoveRange(T[] entities);
 
         Task SaveChangesAsync();
 

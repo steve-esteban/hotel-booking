@@ -11,5 +11,9 @@ namespace HotelBooking.Services.Interfaces
         Task SaveReservationAsync(Reservation reservation);
         Task<List<Reservation>> GetReservationByUserIdAsync(int userId);
         Task<Reservation> GetReservationAsync(int userId, Guid reservationGuid);
+        Task RemoveReservationAsync(Reservation reservation);
+        int GetReservationRoomId(Reservation reservation);
+        Task UpdateReservationDateAsync(IEnumerable<ReservationDate> reservationDatesToRemove,
+            IEnumerable<ReservationDate> reservationDatesToAdd);
     }
 }

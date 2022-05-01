@@ -46,7 +46,7 @@ namespace HotelBooking.API.Controllers
 
         }
 
-        [HttpPost("CreateUser")]
+        [HttpPost()]
         public async Task<IActionResult> CreateUserAsync([FromBody][Bind] UserDto userDto)
         {
             _logger.LogInformation($"Creating user: {Newtonsoft.Json.JsonConvert.SerializeObject(userDto)}");

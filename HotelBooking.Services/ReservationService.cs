@@ -55,5 +55,45 @@ namespace HotelBooking.Services
                 (x.UserId == userId && x.ReservationGuid == reservationGuid), new List<string>() { "ReservationDate" });
         }
 
+        public async Task RemoveReservationAsync(Reservation reservation)
+        {
+            try
+            {
+                foreach (var reservationDate in reservation.ReservationDate)
+                {
+                    _reservationDateRepository.Remove(reservationDate);
+                }
+                _reservationRepository.Remove(reservation);
+                await _reservationRepository.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Removing Reservation");
+                throw;
+            }
+
+        }
+
+        public async Task UpdateReservationDateAsync(IEnumerable<ReservationDate> reservationDatesToRemove,
+            IEnumerable<ReservationDate> reservationDatesToAdd)
+        {
+            try
+            {
+                _reservationDateRepository.RemoveRange(reservationDatesToRemove.ToArray());
+                await _reservationDateRepository.AddRangeAsync(reservationDatesToAdd.ToArray());
+                await _reservationDateRepository.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Updating ReservationDates");
+                throw;
+            }
+        }
+
+        public int GetReservationRoomId(Reservation reservation)
+        {
+            return reservation?.ReservationDate?.FirstOrDefault()?.RoomId ?? 0;
+        }
+
     }
 }
