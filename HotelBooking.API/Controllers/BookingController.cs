@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using System.Text.Json;
 
 namespace HotelBooking.API.Controllers
 {
@@ -73,7 +74,7 @@ namespace HotelBooking.API.Controllers
         [HttpPost("room/{roomId:int}/reservation")]
         public async Task<IActionResult> MakeReservation([FromRoute] int roomId, [FromHeader(Name = "user-guid")] string userGuid, [FromBody][Bind] ReservationRequestDto reservationDto)
         {
-            _logger.LogInformation($"Starting making reservation: {Newtonsoft.Json.JsonConvert.SerializeObject(reservationDto)}");
+            _logger.LogInformation($"Starting making reservation: {JsonSerializer.Serialize(reservationDto)}");
 
             var validation = ValidateReservationDates(reservationDto);
             if (validation.StatusCode != StatusCodes.Status200OK)
@@ -120,7 +121,7 @@ namespace HotelBooking.API.Controllers
 
                 await _reservationService.SaveReservationAsync(reservation);
 
-                _logger.LogInformation($"Finish making reservation: {Newtonsoft.Json.JsonConvert.SerializeObject(reservation.ReservationGuid)}");
+                _logger.LogInformation($"Finish making reservation: {JsonSerializer.Serialize(reservation.ReservationGuid)}");
                 return Ok($"Booked reservation for user {user.UserGuid}. Reservation Id: {reservation.ReservationGuid}");
             }
             catch (Exception ex)
@@ -133,7 +134,7 @@ namespace HotelBooking.API.Controllers
         [HttpPut("reservation/{reservationGuid:Guid}")]
         public async Task<IActionResult> UpdateReservation([FromHeader(Name = "user-guid")] string userGuid, [FromBody][Bind] ReservationRequestDto reservationDto, Guid reservationGuid)
         {
-            _logger.LogInformation($"Starting making reservation: {Newtonsoft.Json.JsonConvert.SerializeObject(reservationDto)}");
+            _logger.LogInformation($"Starting making reservation: {JsonSerializer.Serialize(reservationDto)}");
 
             var validation = ValidateReservationDates(reservationDto);
             if (validation.StatusCode != StatusCodes.Status200OK)
@@ -189,7 +190,7 @@ namespace HotelBooking.API.Controllers
                 var reservationDatesToRemove = existingReservationDates.Except(reservationDatesToIgnore);
                 await _reservationService.UpdateReservationDateAsync(reservationDatesToRemove, reservationDatesToAdd);
 
-                _logger.LogInformation($"Finish updating reservation: {Newtonsoft.Json.JsonConvert.SerializeObject(reservation.ReservationGuid)}");
+                _logger.LogInformation($"Finish updating reservation: {JsonSerializer.Serialize(reservation.ReservationGuid)}");
                 return Ok($"Updated reservation for user {user.UserGuid}. Reservation Id: {reservation.ReservationGuid}");
             }
             catch (Exception ex)

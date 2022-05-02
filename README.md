@@ -2,8 +2,8 @@
 .NET Core Web API application for booking hotel rooms
 
 # Technologies
-- REST API built with .NET Core 3.1 and Visual Studio 2022
-- Entity Framework Core
+- REST API built with .NET 6.0 and Visual Studio 2022
+- Entity Framework Core 
 - SQL Server database
 - Swashbuckle.AspNetCore.Swagger
 - AutoMapper

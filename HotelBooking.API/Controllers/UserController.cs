@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 
@@ -49,14 +50,14 @@ namespace HotelBooking.API.Controllers
         [HttpPost()]
         public async Task<IActionResult> CreateUserAsync([FromBody][Bind] UserDto userDto)
         {
-            _logger.LogInformation($"Creating user: {Newtonsoft.Json.JsonConvert.SerializeObject(userDto)}");
+            _logger.LogInformation($"Creating user: {JsonSerializer.Serialize(userDto)}");
 
             try
             {
                 var existingUser = await _userService.GetByGuidAsync(userDto.UserGuid);
                 if (existingUser != null)
                 {
-                    _logger.LogError($"Error creating user: {Newtonsoft.Json.JsonConvert.SerializeObject(userDto)}; User already exists");
+                    _logger.LogError($"Error creating user: {JsonSerializer.Serialize(userDto)}; User already exists");
                     return Conflict($"User with Guid {userDto.UserGuid} already exist");
                 }
 
@@ -65,7 +66,7 @@ namespace HotelBooking.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error creating user: {Newtonsoft.Json.JsonConvert.SerializeObject(userDto)}");
+                _logger.LogError(ex, $"Error creating user: {JsonSerializer.Serialize(userDto)}");
                 return StatusCode(StatusCodes.Status500InternalServerError, ex);
             }
 
