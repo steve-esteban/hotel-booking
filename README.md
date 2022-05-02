@@ -1,5 +1,5 @@
 # Hotel Booking API
-.NET Core Web API application for booking hotel rooms
+.NET Web API application for booking hotel rooms
 
 # Technologies
 - REST API built with .NET 6.0 and Visual Studio 2022
