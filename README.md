@@ -17,7 +17,7 @@
 - Clone repository
 - Update the ConnectionStrings:HotelBookingDatabase in the appsettings.json file (in the HotelBooking.API project) with your local SQL Server information
 - In the Package Manager Console (targeting the DataAccess.EF project) run the command ``Update-Database`` to deploy the database
-- You can now build and run the applicaiton (In Visual Studio, before sarting the app, make sure the API project is set as the default Startup project) 
+- You can now build and run the application (In Visual Studio, before starting the app, make sure the API project is set as the default Startup project) 
 
 # Database diagram
 
@@ -30,9 +30,9 @@ The ReservationDates table determines the dates and rooms for each reservation. 
 
 # Future improvements
 - Add authentication with JWT.
-- Add atributes to hanlde authorization to specific resources (like rights to modify a specific reservation).
+- Add attributes to handle authorization to specific resources (like rights to modify a specific reservation).
 - Add Unit Tests.
-- Add Admin section to handle features with higher priviliges.
+- Add Admin section to handle features with higher privileges.
 - Add API Health Check.
 - Add Audit logs to log important operations (like removing reservations).
 - Create Postman collection.
