@@ -10,7 +10,7 @@
 
 # Getting Started
 ## Requirements
-- [.NET Core 3.1 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/3.1)
+- [.NET 6.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 - [SQL Server 2019 Express](https://www.microsoft.com/en-us/sql-server/sql-server-downloads)
 
 ## Steps
