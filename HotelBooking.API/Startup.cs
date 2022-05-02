@@ -38,6 +38,7 @@ namespace HotelBooking.API
                 {
                     Title = $"Hotel Booking {groupName}",
                     Version = groupName,
+                    Contact = new OpenApiContact() { Name = "Source code", Url = new Uri("https://github.com/steve-esteban/hotel-booking") },
                     Description = "Hotel Booking app",
                 });
             });

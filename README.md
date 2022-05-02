@@ -17,6 +17,6 @@
 - You can now run the applicaiton (In Visual Studio, before sarting the app, make sure the API project is set as the default Startup project) 
 
 # Database diagram
-
+![Database Diagram](.Documentation/DB_Diagram.PNG)
 
 
