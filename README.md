@@ -29,6 +29,8 @@ Each reservation (Reservation table) must be associated to a user (User table).
 The ReservationDates table determines the dates and rooms for each reservation. It contains a unique constraint over the RoomId and Date fields, making the data consistent with the fact that no room can be booked for the same date more than once.
 
 # Future improvements
+- Add Error handling through Middleware (and avoid try/catch in all methods of controller)
+- Implement CQRS (Command and Query Responsibility Segregation)
 - Add authentication with JWT.
 - Add attributes to handle authorization to specific resources (like rights to modify a specific reservation).
 - Add Unit Tests.
